@@ -1,369 +1,369 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-import "react-tabs/style/react-tabs.css";
-import { toast } from "react-toastify";
-import { useForm, Controller } from "react-hook-form";
-import { format } from "date-fns";
-import { Star } from "lucide-react";
-import { MdOutlineStarOutline, MdOutlineStarPurple500 } from "react-icons/md";
-import { FaQuoteLeft } from "react-icons/fa";
-import Rating from "react-rating";
-import Loading from "@/components/Loading";
+import { useEffect, useMemo, useState } from "react";
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  XMarkIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
+import { Filter } from "lucide-react";
+import Product from "@/app/products/components/Cards/Product";
+import Image from "next/image";
 
-// Mock auth hook
-const useAuth = () => {
-  return {
-    user: {
-      photoURL: "https://i.ibb.co/vxmbWxr3/Mohyminul-Islam-small.png",
-      displayName: "Mohyminul Islam",
-      email: "mohyminulislam@gmail.com",
-    },
-  };
-};
+const PER_PAGE = 9;
+const PRICE_LIMIT = 3000;
 
-const ProductDetails = () => {
-  const params = useParams();
-  const id = params?.Id;
+export default function ProductsPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // State Management
-  const [product, setProduct] = useState(null);
-  // const [thumbnail, setThumbnail] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [query, setQuery] = useState("");
+  const [pickedCategories, setPickedCategories] = useState([]);
+  const [pickedBrands, setPickedBrands] = useState([]);
+  const [price, setPrice] = useState([0, PRICE_LIMIT]);
+  const [stockOnly, setStockOnly] = useState(false);
+  const [order, setOrder] = useState("price-asc");
+  const [page, setPage] = useState(1);
+  const [mobileFilter, setMobileFilter] = useState(false);
 
-  const reviewsData = [
-    {
-      id: "693afc36e0aff7645668c9cc",
-      userName: "Md. Mohyminul Islam",
-      userEmail: "mohyminulislam2001@gmail.com",
-      UserPhoto: "https://i.ibb.co/vxmbWxr3/Mohyminul-Islam-small.png",
-      text: "Great product! Highly recommended.",
-      rating: 5,
-      createdAt: new Date("2025-01-11T17:15:34.360Z"),
-    },
-  ];
-
-  // Fetch Data on Mount
+  /* ---------------- FETCH DATA ---------------- */
   useEffect(() => {
-    window.scrollTo(0, 0);
-
-    const fetchProduct = async () => {
+    const loadProducts = async () => {
       try {
         const res = await fetch(
-          `https://nex-server-one.vercel.app/products/${id}`,
+          "https://next-mart-iota.vercel.app/products",
+          { cache: "no-store" },
         );
-        if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
-        setProduct(data);
-        setThumbnail(data?.images?.[0] || "");
-      } catch (error) {
-        console.error(error);
-        toast.error("Error loading product");
+
+        // fallback image inject
+        const normalized = data.map((p) => ({
+          ...p,
+          Image: p.image || "/images/screenshot.png",
+        }));
+
+        setItems(normalized);
+      } catch (err) {
+        console.error("Product fetch failed");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchProduct();
-  }, [id]);
 
-  // react-hook-form setup
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm({
-    defaultValues: {
-      text: "",
-      rating: 0,
-    },
-  });
+    loadProducts();
+  }, []);
 
-  const handleCustomerReviews = (data) => {
-    console.log("Review submitted:", data);
-    toast.success("Review submitted successfully!");
-    reset();
-  };
+  /* ---------------- DYNAMIC OPTIONS ---------------- */
+  const categoryList = useMemo(
+    () => [...new Set(items.map((i) => i.category))],
+    [items],
+  );
 
-  const handleQuantityChange = (action) => {
-    if (action === "increment") {
-      setQuantity((prev) => prev + 1);
-    } else if (action === "decrement" && quantity > 1) {
-      setQuantity((prev) => prev - 1);
+  const brandList = useMemo(
+    () => [...new Set(items.map((i) => i.brand))],
+    [items],
+  );
+
+  /* ---------------- FILTER + SORT ---------------- */
+  const processedProducts = useMemo(() => {
+    let data = items.filter((item) => {
+      const matchText =
+        item.name.toLowerCase().includes(query.toLowerCase()) ||
+        item.description.toLowerCase().includes(query.toLowerCase());
+
+      const matchCategory =
+        pickedCategories.length === 0 ||
+        pickedCategories.includes(item.category);
+
+      const matchBrand =
+        pickedBrands.length === 0 || pickedBrands.includes(item.brand);
+
+      const matchPrice =
+        item.price >= price[0] && item.price <= price[1];
+
+      const matchStock = !stockOnly || item.inStock;
+
+      return (
+        matchText &&
+        matchCategory &&
+        matchBrand &&
+        matchPrice &&
+        matchStock
+      );
+    });
+
+    switch (order) {
+      case "price-desc":
+        data.sort((a, b) => b.price - a.price);
+        break;
+      case "name-asc":
+        data.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-desc":
+        data.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "rating":
+        data.sort((a, b) => b.rating - a.rating);
+        break;
+      default:
+        data.sort((a, b) => a.price - b.price);
     }
+
+    return data;
+  }, [items, query, pickedCategories, pickedBrands, price, stockOnly, order]);
+
+  /* ---------------- PAGINATION ---------------- */
+  const totalPages = Math.ceil(processedProducts.length / PER_PAGE);
+  const visibleItems = processedProducts.slice(
+    (page - 1) * PER_PAGE,
+    page * PER_PAGE,
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, pickedCategories, pickedBrands, price, stockOnly, order]);
+
+  /* ---------------- HELPERS ---------------- */
+  const resetAll = () => {
+    setQuery("");
+    setPickedCategories([]);
+    setPickedBrands([]);
+    setPrice([0, PRICE_LIMIT]);
+    setStockOnly(false);
+    setOrder("price-asc");
   };
 
-  const handleAddToCart = () => {
-    toast.success(`${quantity} item(s) added to cart!`);
-  };
+  const money = (v) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(v);
 
-  const handleBuyNow = () => {
-    toast.info("Redirecting to checkout...");
-  };
+  /* ---------------- FILTER UI ---------------- */
+  const FilterBox = () => (
+    <div className="bg-white rounded-xl p-6 border shadow-sm">
+      <div className="flex justify-between mb-6">
+        <h3 className="font-semibold flex items-center gap-2">
+          <Filter size={18} /> Filters
+        </h3>
+        <button
+          onClick={resetAll}
+          className="text-sm text-blue-600 font-medium"
+        >
+          Reset
+        </button>
+      </div>
 
-  if (!product)
-    return <div className="text-center py-20">Product not found</div>;
+      {/* Price */}
+      <div className="mb-6">
+        <p className="font-medium mb-2">Price</p>
+        <div className="flex justify-between text-sm mb-2">
+          <span>{money(price[0])}</span>
+          <span>{money(price[1])}</span>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max={PRICE_LIMIT}
+          value={price[0]}
+          onChange={(e) =>
+            setPrice([+e.target.value, price[1]])
+          }
+          className="w-full"
+        />
+        <input
+          type="range"
+          min="0"
+          max={PRICE_LIMIT}
+          value={price[1]}
+          onChange={(e) =>
+            setPrice([price[0], +e.target.value])
+          }
+          className="w-full"
+        />
+      </div>
+
+      {/* Stock */}
+      <label className="flex items-center gap-3 mb-6 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={stockOnly}
+          onChange={(e) => setStockOnly(e.target.checked)}
+          className="hidden"
+        />
+        <div
+          className={`w-5 h-5 border rounded flex items-center justify-center ${
+            stockOnly ? "bg-blue-600 border-blue-600" : ""
+          }`}
+        >
+          {stockOnly && <CheckIcon className="w-3 h-3 text-white" />}
+        </div>
+        In stock only
+      </label>
+
+      {/* Category */}
+      <div className="mb-6">
+        <p className="font-medium mb-2">Categories</p>
+        {categoryList.map((c) => (
+          <label key={c} className="flex gap-2 mb-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={pickedCategories.includes(c)}
+              onChange={() =>
+                setPickedCategories((prev) =>
+                  prev.includes(c)
+                    ? prev.filter((x) => x !== c)
+                    : [...prev, c],
+                )
+              }
+            />
+            {c}
+          </label>
+        ))}
+      </div>
+
+      {/* Brand */}
+      <div>
+        <p className="font-medium mb-2">Brands</p>
+        {brandList.map((b) => (
+          <label key={b} className="flex gap-2 mb-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={pickedBrands.includes(b)}
+              onChange={() =>
+                setPickedBrands((prev) =>
+                  prev.includes(b)
+                    ? prev.filter((x) => x !== b)
+                    : [...prev, b],
+                )
+              }
+            />
+            {b}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+
+  /* ---------------- RENDER ---------------- */
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading products...
+      </div>
+    );
+  }
 
   return (
-    <section className="bg-white">
-      <div className="max-w-6xl w-full px-6 mx-auto py-8">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-gray-600 mb-6">
-          <Link href="/" className="hover:text-indigo-500">
-            Home
-          </Link>
-          {" / "}
-          <Link href="/products" className="hover:text-indigo-500">
-            Products
-          </Link>
-          {" / "}
-          <span>{product.category}</span>
-          {" / "}
-          <span className="text-indigo-500">{product.name}</span>
-        </nav>
-
-        <div className="flex flex-col md:flex-row gap-16">
-          {/* Image Gallery */}
-          <div className="flex flex-col-reverse md:flex-row gap-3">
-            {/* <div className="flex md:flex-col gap-3">
-              {product.images?.map((image, index) => (
-                <div
-                  key={index}
-                  onClick={() => setThumbnail(image)}
-                  className={`border w-20 h-20 rounded overflow-hidden cursor-pointer transition ${
-                    thumbnail === image
-                      ? "border-indigo-500 border-2"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <img
-                    src={image}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div> */}
-
-            <div className="border border-gray-200 max-w-md rounded overflow-hidden bg-gray-50">
-              <img
-                // src={thumbnail}
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Product Info */}
-          <div className="text-sm w-full md:w-1/2">
-            <h1 className="text-black text-3xl font-medium">{product.name}</h1>
-
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex text-yellow-500">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    size={16}
-                    fill={
-                      i < Math.floor(product.rating) ? "currentColor" : "none"
-                    }
-                  />
-                ))}
-              </div>
-              <p className="text-black text-base font-semibold">
-                ({product.rating})
-              </p>
-            </div>
-
-            <div className="mt-6">
-              {product.originalPrice ? (
-                <>
-                  <p className="text-3xl font-bold text-black">
-                    ${product.price}
-                  </p>
-
-                  <p className="text-gray-400 line-through">
-                    MRP: ${product.originalPrice}
-                  </p>
-                </>
-              ) : (
-                <p className="text-2xl font-bold text-black">
-                  ${product.price}
-                </p>
-              )}
-
-              <span className="text-xs text-gray-500">
-                (inclusive of all taxes)
-              </span>
-            </div>
-
-            <p className="text-black text-base font-bold mt-6">About Product</p>
-            <p className="list-disc ml-5 mt-2 space-y-1 text-gray-600">
-              {product?.description}
-            </p>
-
-            {/* Quantity Selector */}
-            <div className="flex items-center gap-4 mt-8">
-              <p className="font-medium">Quantity:</p>
-              <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                <button
-                  onClick={() => handleQuantityChange("decrement")}
-                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200"
-                >
-                  -
-                </button>
-                <span className="px-4 font-medium">{quantity}</span>
-                <button
-                  onClick={() => handleQuantityChange("increment")}
-                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center mt-8 gap-4">
-              <button
-                onClick={handleAddToCart}
-                className="flex-1 py-3 bg-green-500 text-white font-bold rounded hover:bg-green-600 cursor-pointer"
-              >
-                Add to Cart
-              </button>
-              <button
-                onClick={handleBuyNow}
-                className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700 cursor-pointer"
-              >
-                Buy Now
-              </button>
-            </div>
-          </div>
+    <section className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Products</h1>
+          <p className="text-gray-600">
+            {items.length} items available
+          </p>
         </div>
 
-        {/* Tabs Section */}
-        <div className="mt-16">
-          <Tabs>
-            <TabList className="flex border-b border-gray-200 mb-6">
-              <Tab className="px-6 py-2 text-black cursor-pointer outline-none border-b-2 border-transparent aria-selected:border-indigo-500 aria-selected:text-indigo-600">
-                Description
-              </Tab>
-              <Tab className="px-6 py-2 text-black cursor-pointer outline-none border-b-2 border-transparent aria-selected:border-indigo-500 aria-selected:text-indigo-600">
-                Reviews ({reviewsData.length})
-              </Tab>
-              <Tab className="px-6 py-2 text-black cursor-pointer outline-none border-b-2 border-transparent aria-selected:border-indigo-500 aria-selected:text-indigo-600">
-                Write a Review
-              </Tab>
-            </TabList>
-
-            <TabPanel>
-              <div className="prose max-w-none text-gray-600">
-                {product.description || "No detailed description available."}
-              </div>
-            </TabPanel>
-
-            <TabPanel>
-              <div className="space-y-6">
-                {reviewsData.map((review, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 border border-gray-100 rounded-lg bg-gray-50"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <img
-                        src={review.UserPhoto}
-                        alt=""
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div>
-                        <h4 className="font-bold text-black">
-                          {review.userName}
-                        </h4>
-                        <p className="text-xs text-gray-500">
-                          {format(new Date(review.createdAt), "PPP")}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex text-yellow-500 mb-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={14}
-                          fill={i < review.rating ? "currentColor" : "none"}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-gray-700 italic">{review.text}</p>
-                  </div>
-                ))}
-              </div>
-            </TabPanel>
-
-            <TabPanel>
-              <form
-                onSubmit={handleSubmit(handleCustomerReviews)}
-                className="max-w-xl space-y-4"
+        {/* Search + Sort */}
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search products..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl border"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
               >
-                <div>
-                  <label className="block font-medium mb-2 text-black">
-                    Rating
-                  </label>
-                  <Controller
-                    name="rating"
-                    control={control}
-                    rules={{ required: "Please select a rating" }}
-                    render={({ field }) => (
-                      <Rating
-                        initialRating={field.value}
-                        onChange={field.onChange}
-                        emptySymbol={
-                          <MdOutlineStarOutline className="text-gray-300 text-3xl" />
-                        }
-                        fullSymbol={
-                          <MdOutlineStarPurple500 className="text-yellow-400 text-3xl" />
-                        }
-                      />
-                    )}
-                  />
-                  {errors.rating && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.rating.message}
-                    </p>
-                  )}
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          <select
+            value={order}
+            onChange={(e) => setOrder(e.target.value)}
+            className="px-4 py-3 rounded-xl border"
+          >
+            <option value="price-asc">Price ↑</option>
+            <option value="price-desc">Price ↓</option>
+            <option value="name-asc">Name A-Z</option>
+            <option value="name-desc">Name Z-A</option>
+            <option value="rating">Top Rated</option>
+          </select>
+
+          <button
+            onClick={() => setMobileFilter(true)}
+            className="lg:hidden flex items-center gap-2 px-4 py-3 border rounded-xl"
+          >
+            <FunnelIcon className="w-5 h-5" /> Filters
+          </button>
+        </div>
+
+        {/* Layout */}
+        <div className="flex gap-8">
+          <aside className="hidden lg:block w-1/4">
+            <FilterBox />
+          </aside>
+
+          <main className="w-full lg:w-3/4">
+            {visibleItems.length === 0 ? (
+              <p className="text-center py-20">
+                No products found
+              </p>
+            ) : (
+              <>
+                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {visibleItems.map((item) => (
+                    <Product key={item._id} product={item} />
+                  ))}
                 </div>
 
-                <div>
-                  <label className="block font-medium mb-2 text-black">
-                    Your Review
-                  </label>
-                  <textarea
-                    {...register("text", {
-                      required: "Review text is required",
-                    })}
-                    className="w-full border p-3 rounded-md h-32 text-black"
-                    placeholder="What did you like or dislike?"
-                  />
-                  {errors.text && (
-                    <p className="text-red-500 text-xs ">
-                      {errors.text.message}
-                    </p>
-                  )}
-                </div>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center gap-2 mt-10">
+                    <button
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => p - 1)}
+                    >
+                      <ChevronLeftIcon className="w-5 h-5" />
+                    </button>
 
-                <button
-                  type="submit"
-                  className="bg-indigo-600 text-white px-8 py-2 rounded font-bold hover:bg-indigo-700 cursor-pointer"
-                >
-                  Submit Review
-                </button>
-              </form>
-            </TabPanel>
-          </Tabs>
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPage(i + 1)}
+                        className={`px-3 py-2 rounded ${
+                          page === i + 1
+                            ? "bg-blue-600 text-white"
+                            : "border"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+
+                    <button
+                      disabled={page === totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      <ChevronRightIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </main>
         </div>
       </div>
     </section>
   );
-};
-
-export default ProductDetails;
+}
