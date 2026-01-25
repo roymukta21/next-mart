@@ -10,7 +10,8 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { Filter } from "lucide-react";
-import Product from "@/components/Cards/Product";
+import Product from "../products/components/Cards/Product";
+//import Product from "../products/components/Cards/Product";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -35,7 +36,7 @@ export default function ProductsPage() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const res = await fetch("http://localhost:3000/products");
+        const res = await fetch("http://localhost:5000/products");
         if (!res.ok) throw new Error("Failed to fetch products");
         const data = await res.json();
         setProducts(data);

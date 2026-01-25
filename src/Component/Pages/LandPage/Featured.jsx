@@ -1,3 +1,4 @@
+"use client";
 import { Heart, Star } from "lucide-react";
 import React from "react";
 

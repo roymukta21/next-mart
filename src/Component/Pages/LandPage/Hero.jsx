@@ -1,5 +1,6 @@
 "use client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import React, { useState } from "react";
 
 const Hero = () => {
@@ -49,9 +50,12 @@ const Hero = () => {
               </h2>
               <p className="text-2xl md:text-3xl mb-2">{slide.subtitle}</p>
               <p className="text-lg md:text-xl mb-6">{slide.description}</p>
-              <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+              <Link
+                href={"/products"}
+                className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+              >
                 Shop Now
-              </button>
+              </Link>
             </div>
           </div>
         </div>
