@@ -1,4 +1,6 @@
 "use client";
+
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 
@@ -32,9 +34,33 @@ export default function Deals() {
   };
 
   const deals = [
-    { id: 1, name: "Next-Gen Gaming Console", price: 449.99, oldPrice: 649.99, discount: "31%", image: "🕹️" },
-    { id: 2, name: "Ultra HD Smart Television", price: 699.99, oldPrice: 1099.99, discount: "36%", image: "🖥️" },
-    { id: 3, name: "High-Performance Laptop", price: 1149.99, oldPrice: 1499.99, discount: "23%", image: "⌨️" },
+    {
+      id: 1,
+      name: "Next-Gen Gaming Console",
+      price: 449.99,
+      oldPrice: 649.99,
+      discount: "31%",
+      image:
+        "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?q=80&w=1200&auto=format&fit=crop",
+    },
+    {
+      id: 2,
+      name: "Ultra HD Smart Television",
+      price: 699.99,
+      oldPrice: 1099.99,
+      discount: "36%",
+      image:
+        "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?q=80&w=1200&auto=format&fit=crop",
+    },
+    {
+      id: 3,
+      name: "High-Performance Laptop",
+      price: 1149.99,
+      oldPrice: 1499.99,
+      discount: "23%",
+      image:
+        "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1200&auto=format&fit=crop",
+    },
   ];
 
   return (
@@ -45,7 +71,9 @@ export default function Deals() {
           <div className="flex flex-col items-center gap-3 mb-10">
             <div className="flex items-center gap-2">
               <Clock className="h-7 w-7 text-blue-600" />
-              <h2 className="text-3xl font-bold text-gray-900">Flash Offers</h2>
+              <h2 className="text-3xl font-bold text-gray-900">
+                Flash Offers
+              </h2>
             </div>
 
             <span className="text-sm text-gray-600">
@@ -61,31 +89,46 @@ export default function Deals() {
             {deals.map((deal) => (
               <div
                 key={deal.id}
-                className="bg-gradient-to-br from-blue-50 to-sky-50 rounded-2xl p-6 relative overflow-hidden hover:shadow-xl transition"
+                className="bg-gradient-to-br from-blue-50 to-sky-50 rounded-2xl relative overflow-hidden hover:shadow-xl transition"
               >
-                <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                <div className="absolute top-4 right-4 z-10 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
                   Save {deal.discount}
                 </div>
 
-                <div className="text-7xl mb-4 text-center">{deal.image}</div>
-
-                <h3 className="font-semibold text-xl mb-2 text-gray-900">{deal.name}</h3>
-
-                <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-2xl font-bold text-blue-600">${deal.price}</span>
-                  <span className="text-gray-500 line-through">${deal.oldPrice}</span>
+                <div className="relative h-56 overflow-hidden">
+                  <Image
+                    src={deal.image}
+                    alt={deal.name}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
 
-                <button
-                  disabled={timeLeft === 0}
-                  className={`w-full py-3 rounded-xl font-semibold transition ${
-                    timeLeft === 0
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  {timeLeft === 0 ? "Deal Expired" : "Claim Offer"}
-                </button>
+                <div className="p-6">
+                  <h3 className="font-semibold text-xl mb-2 text-gray-900">
+                    {deal.name}
+                  </h3>
+
+                  <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-2xl font-bold text-blue-600">
+                      ${deal.price}
+                    </span>
+                    <span className="text-gray-500 line-through">
+                      ${deal.oldPrice}
+                    </span>
+                  </div>
+
+                  <button
+                    disabled={timeLeft === 0}
+                    className={`w-full py-3 rounded-xl font-semibold transition ${
+                      timeLeft === 0
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {timeLeft === 0 ? "Deal Expired" : "Claim Offer"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

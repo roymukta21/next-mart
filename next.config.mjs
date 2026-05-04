@@ -4,8 +4,10 @@ const nextConfig = {
   reactCompiler: true,
 
    images: {
-    domains: ["images.unsplash.com"],
+    domains: ["images.unsplash.com", 
+      "cdn-icons-png.flaticon.com",],
   },
+  
 };
 
 export default nextConfig;
