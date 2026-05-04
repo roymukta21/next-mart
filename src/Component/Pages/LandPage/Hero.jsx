@@ -11,19 +11,19 @@ const Hero = () => {
       title: "Spring Collection 2026",
       subtitle: "Up to 60% Off",
       description: "Refresh your wardrobe with the latest styles",
-      bg: "bg-gradient-to-r from-pink-400 to-purple-600",
+      bg: "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1200&auto=format&fit=crop",
     },
     {
       title: "Trending Now",
       subtitle: "Just Arrived",
       description: "Be ahead in fashion with our new arrivals",
-      bg: "bg-gradient-to-r from-blue-400 to-cyan-600",
+      bg: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=1200&auto=format&fit=crop",
     },
     {
       title: "Luxury Essentials",
       subtitle: "Premium Quality",
       description: "Style meets comfort in every piece",
-      bg: "bg-gradient-to-r from-amber-500 to-orange-600",
+      bg: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop",
     },
   ];
 
@@ -31,7 +31,7 @@ const Hero = () => {
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
   const prevSlide = () =>
     setCurrentSlide(
-      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length
+      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length,
     );
 
   return (
@@ -39,9 +39,12 @@ const Hero = () => {
       {heroSlides.map((slide, index) => (
         <div
           key={index}
-          className={`absolute inset-0 transition-opacity duration-500 ${
+          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-500 ${
             index === currentSlide ? "opacity-100" : "opacity-0"
-          } ${slide.bg}`}
+          }`}
+          style={{
+            backgroundImage: `url(${slide.bg})`,
+          }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
             <div className="text-white max-w-xl">
